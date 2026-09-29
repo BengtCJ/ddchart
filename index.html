@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DD Chart — Scatter</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <script src="tableau.extensions.js" onerror="console.warn('Tableau Extensions API not available — running in preview mode')"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; font-family: 'Helvetica Neue', Arial, sans-serif; overflow: hidden; }
+    #app-shell { display: flex; flex-direction: column; width: 100%; height: 100%; }
+    #chart { flex: 1; min-height: 0; overflow: hidden; }
+    .error { font-size: 13px; padding: 16px; font-family: monospace; }
+
+    #settings-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    }
+    #settings-dialog {
+      background: #fff; border: 1px solid #ccc; border-radius: 8px;
+      padding: 24px; width: 440px; max-width: 90vw;
+      max-height: 85vh; overflow-y: auto; color: #222; font-size: 13px;
+    }
+    #settings-dialog h2 { font-size: 18px; font-weight: bold; margin-bottom: 14px; }
+    #settings-dialog label {
+      display: block; margin-top: 10px; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.06em; color: #666;
+    }
+    #settings-dialog select, #settings-dialog input[type="text"] {
+      width: 100%; margin-top: 3px; padding: 6px 8px;
+      background: #f8f8f8; border: 1px solid #ccc; border-radius: 4px;
+      color: #222; font-size: 13px;
+    }
+    .settings-row { display: flex; gap: 10px; }
+    .settings-row > div { flex: 1; }
+    .btn-save {
+      margin-top: 18px; width: 100%; padding: 9px;
+      background: #e994a2; border: none; border-radius: 6px;
+      color: #1a1a1a; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .btn-save:hover { background: #d73f58; color: #fff; }
+    #configure-btn {
+      position: fixed; bottom: 8px; right: 8px;
+      background: rgba(128,128,128,0.2); border: 1px solid rgba(128,128,128,0.25);
+      border-radius: 50%; width: 28px; height: 28px; color: rgba(128,128,128,0.6);
+      font-size: 14px; cursor: pointer; z-index: 100;
+    }
+    #configure-btn:hover { background: rgba(128,128,128,0.35); }
+  </style>
+</head>
+<body>
+  <div id="app-shell"><div id="chart"></div></div>
+  <button id="configure-btn" title="Configure chart">⚙</button>
+
+  <script>
+  var VERSION = '2026-09-29.5';
+
+  var AXIS_MIN = 0;
+  var AXIS_MAX = 5;
+  var MIN_BUBBLE_R = 5;
+  var MAX_BUBBLE_R = 16;
+  var PINK = '#e994a2';
+
+  var ZONE_NAMES = {1:'Drift', 2:'Inflection', 3:'Overreach',
+                    4:'Plateau', 5:'Peak', 6:'Frontier'};
+
+  // ─── THEMES — black/white/grey + pink only ───────────────────────────────
+  var THEMES = {
+    light: {
+      ground:     'white',
+      ink:        'black',
+      brand:      '#7d7d7d',      // all non-client bubbles
+      brandEdge:  'black',
+      client:     PINK,           // client bubble fill
+      clientRing: PINK,
+      rank1Ring:  'black',
+      curve:      '#999999',
+      zoneLine:   '#bbbbbb',
+      zoneTint:   '#000000',      // single grey for all zone bands
+      zoneTintA:  0.04,           // very subtle
+      zoneText:   '#aaaaaa',
+      guideLight: '#cccccc',
+      guideMed:   '#999999',
+      guideText:  '#999999',
+      legendText: '#666666',
+      subtitle:   '#888888',
+      labelBg:    'rgba(255,255,255,0.8)',
+      faintBub:   '#cccccc',
+    },
+    dark: {
+      ground:     '#111111',
+      ink:        '#e6e6e6',
+      brand:      '#888888',
+      brandEdge:  '#e6e6e6',
+      client:     PINK,
+      clientRing: PINK,
+      rank1Ring:  '#e6e6e6',
+      curve:      '#555555',
+      zoneLine:   '#333333',
+      zoneTint:   '#ffffff',
+      zoneTintA:  0.04,
+      zoneText:   '#555555',
+      guideLight: '#333333',
+      guideMed:   '#444444',
+      guideText:  '#555555',
+      legendText: '#888888',
+      subtitle:   '#777777',
+      labelBg:    'rgba(17,17,17,0.8)',
+      faintBub:   '#444444',
+    },
+  };
+
+  var DEFAULTS = {
+    worksheet:'', brandField:'BRAND NAME UPPER', xField:'SCORE_X_OVERALL',
+    yField:'SCORE_Y_OVERALL', zoneField:'ZONE_NAME', rankField:'RANK_OVERALL',
+    apexXField:'TARGET_X', apexYField:'TARGET_Y', roleField:'BRAND_ROLE',
+    scoreField:'SCORE_METRICS_OVERALL', displayField:'DISPLAY_NAME',
+    parameter:'Brand Parameter',
+    theme:'light', mode:'simple', guides:'zones',
+  };
+
+  var _dashboard=null, _lastData=null, _lastOpts=null,
+      _clientBrand=null, _selectedBrand=null;
+  var CONFIG = assign({}, DEFAULTS);
+
+  function assign(t) {
+    for (var i=1;i<arguments.length;i++) {
+      var s=arguments[i]; if(s) for(var k in s) if(s.hasOwnProperty(k)) t[k]=s[k];
+    } return t;
+  }
+  function P() { return THEMES[CONFIG.theme] || THEMES.light; }
+
+  function showError(msg) {
+    document.getElementById('chart').innerHTML =
+      '<div class="error" style="color:'+PINK+'">'+msg+'</div>';
+  }
+
+  function bubbleRadius(score, minZ, maxZ) {
+    if (score===null||score===undefined||isNaN(score)) return MIN_BUBBLE_R;
+    if (minZ===null||maxZ===null||maxZ===minZ) return MIN_BUBBLE_R;
+    var n = (score-minZ)/(maxZ-minZ);
+    return MIN_BUBBLE_R + Math.max(0,Math.min(1,n)) * (MAX_BUBBLE_R-MIN_BUBBLE_R);
+  }
+
+  function curveY(x, ax, ay) {
+    if (ax<=0) return 0;
+    if (x<=ax) return ay*Math.pow(x/ax,2);
+    var d=AXIS_MAX-ax; return d<=0?ay:ay-ay*Math.pow((x-ax)/d,2);
+  }
+  function curvePoints(ax, ay) {
+    var pts=[],n=300;
+    for (var i=0;i<=n;i++) {
+      var x=AXIS_MIN+(AXIS_MAX-AXIS_MIN)*i/n, y=curveY(x,ax,ay);
+      if (y>=AXIS_MIN&&y<=AXIS_MAX) pts.push([x,y]);
+    } return pts;
+  }
+
+  // ─── RENDER ──────────────────────────────────────────────────────────────
+  function renderScatter(el, data, clientBrand, opts) {
+    el.innerHTML = '';
+    opts = opts || {};
+    if (!data||!data.brands||!data.brands.length) { showError('No brand data.'); return; }
+
+    var T         = P();
+    var guides    = opts.guides || CONFIG.guides || 'zones';
+    var mode      = opts.mode   || CONFIG.mode   || 'simple';
+    var title     = opts.title  || '';
+    var subTitle  = opts.panelLabel || '';
+
+    var rect = el.getBoundingClientRect();
+    var W=rect.width||600, H=rect.height||600;
+    var margin={top:44, right:16, bottom:58, left:58};
+    var w=W-margin.left-margin.right, h=H-margin.top-margin.bottom;
+    var side=Math.min(w,h); w=h=side;
+    margin.left=Math.max(58,Math.floor((W-w)/2));
+    margin.top=Math.max(44,Math.floor((H-h)/2));
+
+    var xS=d3.scaleLinear().domain([AXIS_MIN,AXIS_MAX]).range([0,w]);
+    var yS=d3.scaleLinear().domain([AXIS_MIN,AXIS_MAX]).range([h,0]);
+
+    var svg=d3.select(el).append('svg')
+      .attr('width',W).attr('height',H).style('display','block')
+      .style('background',T.ground);
+    var g=svg.append('g').attr('transform','translate('+margin.left+','+margin.top+')');
+
+    var brands=data.brands, apexX=data.apexX, apexY=data.apexY;
+
+    var zVals=brands.map(function(b){return b.score;})
+      .filter(function(v){return v!==null&&v!==undefined&&!isNaN(v)&&v>0;});
+    var minZ=zVals.length?d3.min(zVals):0, maxZ=zVals.length?d3.max(zVals):100;
+    if(minZ===maxZ){minZ=0;maxZ=100;}
+
+    // ── Stats ──────────────────────────────────────────────────────────────
+    var xs=brands.map(function(b){return b.x;}).filter(function(v){return !isNaN(v);});
+    var ys=brands.map(function(b){return b.y;}).filter(function(v){return !isNaN(v);});
+    xs.sort(function(a,b){return a-b;}); ys.sort(function(a,b){return a-b;});
+    var q25x=xs.length?d3.quantile(xs,0.25):2.5;
+    var q75x=xs.length?d3.quantile(xs,0.75):2.5;
+    var meanY=ys.length?d3.mean(ys):2.5;
+    var meanX=xs.length?d3.mean(xs):2.5;
+    var q25y=ys.length?d3.quantile(ys,0.25):2.5;
+    var q75y=ys.length?d3.quantile(ys,0.75):2.5;
+
+    // ── Zone bands ─────────────────────────────────────────────────────────
+    var bands={};
+    bands[1]=[AXIS_MIN,q25x,AXIS_MIN,meanY]; bands[2]=[q25x,q75x,AXIS_MIN,meanY];
+    bands[3]=[q75x,AXIS_MAX,AXIS_MIN,meanY]; bands[4]=[AXIS_MIN,q25x,meanY,AXIS_MAX];
+    bands[5]=[q25x,q75x,meanY,AXIS_MAX]; bands[6]=[q75x,AXIS_MAX,meanY,AXIS_MAX];
+
+    // Alternating tint: even zones slightly tinted, odd zones untinted
+    for (var zid in bands) {
+      var b=bands[zid];
+      var tintAlpha = (parseInt(zid) % 2 === 0) ? T.zoneTintA : T.zoneTintA * 2;
+      g.append('rect')
+        .attr('x',xS(b[0])).attr('y',yS(b[3]))
+        .attr('width',xS(b[1])-xS(b[0])).attr('height',yS(b[2])-yS(b[3]))
+        .attr('fill',T.zoneTint).attr('opacity',tintAlpha);
+    }
+
+    // Zone labels
+    var zLSz=Math.max(7,Math.min(9,side/55));
+    var padX=0.03*(AXIS_MAX-AXIS_MIN), padY=0.02*(AXIS_MAX-AXIS_MIN);
+    for (var zlid in bands) {
+      var lbl=ZONE_NAMES[zlid]; if(!lbl) continue;
+      var zb=bands[zlid]; if(zb[1]-zb[0]<=0||zb[3]-zb[2]<=0) continue;
+      g.append('text').attr('x',xS(zb[0]+padX)).attr('y',yS(zb[3]-padY))
+        .text(lbl).style('font-size',zLSz+'px').style('fill',T.zoneText)
+        .style('pointer-events','none');
+    }
+
+    // ── Guide lines ────────────────────────────────────────────────────────
+    if (guides==='zones') {
+      [q25x,q75x].forEach(function(xv) {
+        g.append('line').attr('x1',xS(xv)).attr('x2',xS(xv)).attr('y1',0).attr('y2',h)
+          .attr('stroke',T.zoneLink).attr('stroke',T.zoneText).attr('stroke-width',0.7).attr('opacity',0.6);
+      });
+      g.append('line').attr('x1',0).attr('x2',w).attr('y1',yS(meanY)).attr('y2',yS(meanY))
+        .attr('stroke',T.zoneText).attr('stroke-width',0.7).attr('opacity',0.6);
+    } else if (guides==='all') {
+      g.append('line').attr('x1',xS(meanX)).attr('x2',xS(meanX)).attr('y1',0).attr('y2',h)
+        .attr('stroke',T.guideLight).attr('stroke-dasharray','3,3').attr('stroke-width',0.8);
+      g.append('text').attr('x',xS(meanX)).attr('y',h-4).attr('text-anchor','middle')
+        .style('font-size','7px').style('fill',T.guideText).text('x\u0304='+meanX.toFixed(2));
+
+      g.append('line').attr('x1',0).attr('x2',w).attr('y1',yS(meanY)).attr('y2',yS(meanY))
+        .attr('stroke',T.guideLight).attr('stroke-dasharray','3,3').attr('stroke-width',0.8);
+      g.append('text').attr('x',6).attr('y',yS(meanY)-4)
+        .style('font-size','7px').style('fill',T.guideText).text('y\u0304='+meanY.toFixed(2));
+
+      g.append('line').attr('x1',xS(q25x)).attr('x2',xS(q25x)).attr('y1',0).attr('y2',h)
+        .attr('stroke',T.guideLight).attr('stroke-dasharray','3,3').attr('stroke-width',0.8);
+      g.append('text').attr('x',xS(q25x)).attr('y',h-4).attr('text-anchor','middle')
+        .style('font-size','7px').style('fill',T.guideText).text('Q1='+q25x.toFixed(2));
+
+      g.append('line').attr('x1',0).attr('x2',w).attr('y1',yS(q25y)).attr('y2',yS(q25y))
+        .attr('stroke',T.guideLight).attr('stroke-dasharray','3,3').attr('stroke-width',0.8);
+      g.append('text').attr('x',6).attr('y',yS(q25y)-4)
+        .style('font-size','7px').style('fill',T.guideText).text('Q1='+q25y.toFixed(2));
+
+      g.append('line').attr('x1',xS(q75x)).attr('x2',xS(q75x)).attr('y1',0).attr('y2',h)
+        .attr('stroke',T.guideMed).attr('stroke-dasharray','6,3').attr('stroke-width',0.6).attr('opacity',0.5);
+      g.append('line').attr('x1',0).attr('x2',w).attr('y1',yS(q75y)).attr('y2',yS(q75y))
+        .attr('stroke',T.guideMed).attr('stroke-dasharray','6,3').attr('stroke-width',0.6).attr('opacity',0.5);
+    }
+
+    // ── Curve + apex ───────────────────────────────────────────────────────
+    if (apexX!==null&&apexY!==null&&!isNaN(apexX)&&!isNaN(apexY)) {
+      var cPts=curvePoints(apexX,apexY);
+      g.append('path').datum(cPts)
+        .attr('d',d3.line().x(function(d){return xS(d[0]);}).y(function(d){return yS(d[1]);}))
+        .attr('fill','none').attr('stroke',T.curve).attr('stroke-width',0.6);
+      g.append('circle').attr('cx',xS(apexX)).attr('cy',yS(apexY)).attr('r',10)
+        .attr('fill','none').attr('stroke',T.ink).attr('stroke-width',2);
+      g.append('path')
+        .attr('d',d3.symbol().type(d3.symbolStar).size(120)())
+        .attr('transform','translate('+xS(apexX)+','+yS(apexY)+')')
+        .attr('fill',T.ink);
+    }
+
+    // ── Category cloud — advanced mode only ────────────────────────────────
+    if (mode==='advanced'&&data.cloud&&data.cloud.length) {
+      data.cloud.forEach(function(c) {
+        var cx=xS(c.x),cy=yS(c.y);
+        var isC = c.name===clientBrand;
+        g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',4)
+          .attr('fill',isC?PINK:T.brand).attr('opacity',isC?0.5:0.3)
+          .attr('data-brand',c.name);
+        var letter=(c.group||'').charAt(0).toUpperCase();
+        if (letter) {
+          g.append('text').attr('x',cx).attr('y',cy+2.5).attr('text-anchor','middle')
+            .style('font-size','7px').style('font-weight','bold')
+            .style('fill',isC?PINK:T.brand).style('opacity','0.7')
+            .style('pointer-events','none').text(letter);
+        }
+      });
+      var groupCats=['growth','standout','fandom'];
+      var allNames=brands.map(function(b){return b.name;});
+      allNames.forEach(function(brand) {
+        var isC=brand===clientBrand;
+        var pts=[];
+        groupCats.forEach(function(cat) {
+          var matches=data.cloud.filter(function(c){return c.name===brand&&c.group===cat;});
+          if (matches.length)
+            pts.push([d3.mean(matches,function(d){return d.x;}),d3.mean(matches,function(d){return d.y;})]);
+        });
+        if (pts.length===3) {
+          g.append('path').datum(pts.concat([pts[0]]))
+            .attr('d',d3.line().x(function(d){return xS(d[0]);}).y(function(d){return yS(d[1]);}))
+            .attr('fill','none').attr('stroke',isC?PINK:T.brand)
+            .attr('stroke-width',isC?1:0.7).attr('opacity',isC?0.5:0.2);
+        }
+      });
+    }
+
+    // ── Brand centroids ─────────────────────────────────────────────────────
+    var rank1=brands.reduce(function(best,b){
+      return (b.rank!==null&&(best===null||b.rank<best.rank))?b:best;
+    },null);
+    var rank1Name=rank1?rank1.name:null;
+
+    brands.slice().sort(function(a,b){
+      if(a.name===clientBrand) return 1;
+      if(b.name===clientBrand) return -1;
+      return 0;
+    }).forEach(function(b) {
+      if(b.x===null||b.y===null||isNaN(b.x)||isNaN(b.y)) return;
+      var cx=xS(b.x), cy=yS(b.y);
+      var isClient = clientBrand && b.name===clientBrand;
+      var fill = isClient ? T.client : T.brand;
+      var hasSf = b.score!==null&&b.score!==undefined&&!isNaN(b.score)&&b.score>0;
+
+      if (!hasSf) {
+        g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',MIN_BUBBLE_R)
+          .attr('fill',fill).attr('opacity',isClient?0.7:0.4).attr('stroke','none')
+          .attr('data-brand',b.name).style('cursor','pointer')
+          .on('click',function(){toggleBrand(b.name);});
+        g.append('text').attr('x',cx+MIN_BUBBLE_R+3).attr('y',cy-2)
+          .text(b.name).style('font-size','8px').style('opacity',isClient?'0.8':'0.45')
+          .style('fill',T.ink).style('pointer-events','none').attr('data-brand',b.name);
+        return;
+      }
+
+      var r=bubbleRadius(b.score,minZ,maxZ);
+
+      g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',r)
+        .attr('fill',fill).attr('opacity',isClient?0.9:0.65)
+        .attr('stroke',T.brandEdge).attr('stroke-width',isClient?1.5:0.8)
+        .attr('data-brand',b.name).style('cursor','pointer')
+        .on('click',function(){toggleBrand(b.name);});
+
+      // Rank #1 ring
+      if (b.name===rank1Name && !isClient) {
+        g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',r+4)
+          .attr('fill','none').attr('stroke',T.rank1Ring).attr('stroke-width',2)
+          .attr('data-brand',b.name);
+      }
+      // Client ring — pink, dashed
+      if (isClient) {
+        g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',r+5)
+          .attr('fill','none').attr('stroke',T.clientRing).attr('stroke-width',2.5)
+          .attr('stroke-dasharray','5,3').attr('data-brand',b.name);
+      }
+
+      var rankStr=(b.rank!==null&&b.rank!==undefined)?' #'+b.rank:'';
+      g.append('text').attr('x',cx+r+4).attr('y',cy-2)
+        .text(b.name+rankStr)
+        .style('font-size','9.5px').style('font-weight','bold')
+        .style('fill',T.ink).style('pointer-events','none')
+        .attr('data-brand',b.name);
+    });
+
+    // ── Axes ────────────────────────────────────────────────────────────────
+    var gx=g.append('g').attr('transform','translate(0,'+h+')').call(d3.axisBottom(xS).tickValues([0,1,2,3,4,5]));
+    var gy=g.append('g').call(d3.axisLeft(yS).tickValues([0,1,2,3,4,5]));
+    [gx,gy].forEach(function(a){
+      a.selectAll('text').style('font-size','10px').style('fill',T.ink);
+      a.selectAll('line').style('stroke',T.ink);
+      a.select('.domain').style('stroke',T.ink);
+    });
+
+    svg.append('text')
+      .attr('x',margin.left+w/2).attr('y',margin.top+h+42).attr('text-anchor','middle')
+      .style('font-size','11px').style('fill',T.ink)
+      .text('LLM Score  \u2190  Fading | Fixed | Future  \u2192');
+    svg.append('text').attr('transform','rotate(-90)')
+      .attr('x',-(margin.top+h/2)).attr('y',14).attr('text-anchor','middle')
+      .style('font-size','11px').style('fill',T.ink)
+      .text('Survey Score  \u2190  Fading | Fixed | Future  \u2192');
+
+    if (title) {
+      svg.append('text').attr('x',margin.left).attr('y',18)
+        .style('font-size','13px').style('font-weight','bold').style('fill',T.ink).text(title);
+    }
+    if (subTitle) {
+      svg.append('text').attr('x',margin.left+w/2).attr('y',margin.top+h+54).attr('text-anchor','middle')
+        .style('font-size','9px').style('fill',T.subtitle).style('font-style','italic').text(subTitle);
+    }
+
+    // ── Bubble size legend (lower right) ───────────────────────────────────
+    var bLX=w-30, bLY=h-10;
+    var bLVals=[minZ,minZ+(maxZ-minZ)*0.5,maxZ];
+    g.append('text').attr('x',bLX).attr('y',bLY-bLVals.length*26-6).attr('text-anchor','middle')
+      .style('font-size','7px').style('fill',T.legendText).text('Score');
+    bLVals.forEach(function(v,i) {
+      var r=bubbleRadius(v,minZ,maxZ), by=bLY-i*26;
+      g.append('circle').attr('cx',bLX).attr('cy',by).attr('r',r)
+        .attr('fill',T.faintBub).attr('opacity',0.5);
+      g.append('text').attr('x',bLX+MAX_BUBBLE_R+6).attr('y',by+3)
+        .style('font-size','7px').style('fill',T.legendText).text(v.toFixed(1));
+    });
+
+    _lastData=data; _lastOpts=opts;
+  }
+
+  // ─── SELECTION ───────────────────────────────────────────────────────────
+  function toggleBrand(name) {
+    _selectedBrand=(_selectedBrand===name)?null:name;
+    applySelectionOpacity();
+    if (_dashboard&&_selectedBrand) {
+      Promise.allSettled(_dashboard.worksheets
+        .filter(function(ws){return ws.name!==CONFIG.worksheet;})
+        .map(function(ws){return ws.selectMarksByValueAsync(
+          [{fieldName:CONFIG.brandField,value:_selectedBrand}],
+          tableau.SelectionUpdateType.Replace);}));
+    } else if (_dashboard) {
+      Promise.allSettled(_dashboard.worksheets
+        .filter(function(ws){return ws.name!==CONFIG.worksheet;})
+        .map(function(ws){return ws.clearSelectedMarksAsync();}));
+    }
+  }
+  function applySelectionOpacity() {
+    d3.select('#chart').selectAll('[data-brand]')
+      .transition().duration(300).ease(d3.easeCubicOut)
+      .style('opacity',function(){
+        if(!_selectedBrand) return null;
+        return this.getAttribute('data-brand')===_selectedBrand?1:0.12;
+      });
+  }
+
+  // ─── DATA FETCH ──────────────────────────────────────────────────────────
+  async function fetchAndRender(worksheet, dashboard) {
+    try {
+      var dt=await worksheet.getSummaryDataAsync({maxRows:5000});
+      var cols=dt.columns, rows=dt.data;
+      function ci(name) {
+        var n=name.toLowerCase().replace(/[\s_]+/g,'');
+        return cols.findIndex(function(c){return c.fieldName.toLowerCase().replace(/[\s_]+/g,'')===n;});
+      }
+      var bi=ci(CONFIG.brandField),xi=ci(CONFIG.xField),yi=ci(CONFIG.yField),
+          zi=ci(CONFIG.zoneField),ri=ci(CONFIG.rankField),
+          axi=ci(CONFIG.apexXField),ayi=ci(CONFIG.apexYField),
+          roi=ci(CONFIG.roleField),si=ci(CONFIG.scoreField);
+      if(bi===-1||xi===-1||yi===-1){
+        showError('Required fields missing. Available: '+cols.map(function(c){return c.fieldName;}).join(', '));
+        return;
+      }
+      var brands=[],apexX=null,apexY=null;
+      rows.forEach(function(row){
+        var name=row[bi].formattedValue||row[bi].value;
+        var role=roi!==-1?(row[roi].value||'').toLowerCase():'';
+        if(role==='target'||name==='bulletproof_target'){
+          if(axi!==-1)apexX=parseFloat(row[axi].value);
+          if(ayi!==-1)apexY=parseFloat(row[ayi].value);
+          return;
+        }
+        var x=parseFloat(row[xi].value),y=parseFloat(row[yi].value);
+        if(isNaN(x)||isNaN(y))return;
+        brands.push({name:name,x:x,y:y,
+          zone:zi!==-1?(row[zi].value||''):'',
+          rank:ri!==-1?parseInt(row[ri].value):null,
+          score:si!==-1?parseFloat(row[si].value):null,role:role});
+      });
+      if(apexX===null&&axi!==-1&&brands.length){
+        apexX=parseFloat(rows[0][axi].value); apexY=parseFloat(rows[0][ayi].value);
+      }
+      var allParams=await dashboard.getParametersAsync();
+      var bp=allParams.find(function(p){return p.name===CONFIG.parameter;});
+      if(bp)_clientBrand=(bp.currentValue.formattedValue||bp.currentValue.value||'').trim();
+      renderScatter(document.getElementById('chart'),
+        {brands:brands,apexX:apexX,apexY:apexY,cloud:[]},
+        _clientBrand,{guides:CONFIG.guides,mode:CONFIG.mode});
+    } catch(err){ showError('Error: '+err.message); }
+  }
+
+  // ─── SAMPLE DATA ─────────────────────────────────────────────────────────
+  function getSampleData() {
+    return { apexX:4.4, apexY:4.3, cloud:[
+      {name:'VELLORA COFFEE',group:'growth',x:3.6,y:3.1},{name:'VELLORA COFFEE',group:'standout',x:3.2,y:2.7},{name:'VELLORA COFFEE',group:'fandom',x:3.4,y:2.9},
+      {name:'NORTHBROOK ROASTERS',group:'growth',x:2.4,y:3.7},{name:'NORTHBROOK ROASTERS',group:'standout',x:2.8,y:3.3},{name:'NORTHBROOK ROASTERS',group:'fandom',x:2.6,y:3.5},
+      {name:'CAFFE MIRELLA',group:'growth',x:2.9,y:2.0},{name:'CAFFE MIRELLA',group:'standout',x:3.3,y:2.4},{name:'CAFFE MIRELLA',group:'fandom',x:3.1,y:2.2},
+      {name:'APEX BREW',group:'growth',x:4.2,y:4.1},{name:'APEX BREW',group:'standout',x:3.8,y:3.7},{name:'APEX BREW',group:'fandom',x:4.0,y:3.9},
+      {name:'DARKSTONE COFFEE',group:'growth',x:1.9,y:4.3},{name:'DARKSTONE COFFEE',group:'standout',x:2.3,y:3.9},{name:'DARKSTONE COFFEE',group:'fandom',x:2.1,y:4.1},
+    ], brands:[
+      {name:'VELLORA COFFEE',x:3.4,y:2.9,rank:1,zone:'Vanguard',score:71,role:'client'},
+      {name:'NORTHBROOK ROASTERS',x:2.6,y:3.5,rank:2,zone:'Lead',score:63,role:'direct competitor'},
+      {name:'CAFFE MIRELLA',x:3.1,y:2.2,rank:3,zone:'Familiar',score:59,role:'direct competitor'},
+      {name:'HARBOUR & VINE',x:1.8,y:1.6,rank:4,zone:'Drift',score:null,role:'indirect competitor'},
+      {name:'SOLACE BEAN CO',x:1.2,y:2.4,rank:5,zone:'Lockstep',score:null,role:'direct competitor'},
+      {name:'APEX BREW',x:4.0,y:3.9,rank:6,zone:'Frontier',score:82,role:'direct competitor'},
+      {name:'DARKSTONE COFFEE',x:2.1,y:4.1,rank:7,zone:'Peak',score:55,role:'direct competitor'},
+    ]};
+  }
+  function sampleOpts(){return{title:'Sample run  |  2025 Q4  |  rank: chebyshev',
+    panelLabel:'bubble: score_metrics_overall  ·  sample data  ·  apex (4.40, 4.30)',
+    guides:CONFIG.guides,mode:CONFIG.mode};}
+
+  // ─── SETTINGS ────────────────────────────────────────────────────────────
+  async function showSettings(worksheets) {
+    var existing=document.getElementById('settings-overlay'); if(existing)existing.remove();
+    var overlay=document.createElement('div'); overlay.id='settings-overlay';
+    function mkI(id,lbl,cur){return '<label for="'+id+'">'+lbl+'</label><input type="text" id="'+id+'" value="'+(cur||'')+'">';}
+    function mkS(id,lbl,opts,cur){
+      var h='<label for="'+id+'">'+lbl+'</label><select id="'+id+'">';
+      (opts||[]).forEach(function(o){h+='<option value="'+o+'"'+(o===cur?' selected':'')+'>'+o+'</option>';});
+      if(cur&&(!opts||opts.indexOf(cur)===-1))h+='<option value="'+cur+'" selected>'+cur+'</option>';
+      return h+'</select>';
+    }
+    var body='<h2>DD Chart — Configure</h2>';
+    body+=mkS('s-worksheet','Worksheet',worksheets,CONFIG.worksheet);
+    body+='<div class="settings-row"><div>'+mkI('s-brandField','Brand field',CONFIG.brandField)+'</div>';
+    body+='<div>'+mkI('s-displayField','Display name',CONFIG.displayField)+'</div></div>';
+    body+='<div class="settings-row"><div>'+mkI('s-xField','X field',CONFIG.xField)+'</div>';
+    body+='<div>'+mkI('s-yField','Y field',CONFIG.yField)+'</div></div>';
+    body+='<div class="settings-row"><div>'+mkI('s-rankField','Rank',CONFIG.rankField)+'</div>';
+    body+='<div>'+mkI('s-zoneField','Zone',CONFIG.zoneField)+'</div></div>';
+    body+='<div class="settings-row"><div>'+mkI('s-apexXField','Apex X',CONFIG.apexXField)+'</div>';
+    body+='<div>'+mkI('s-apexYField','Apex Y',CONFIG.apexYField)+'</div></div>';
+    body+='<div class="settings-row"><div>'+mkI('s-roleField','Role',CONFIG.roleField)+'</div>';
+    body+='<div>'+mkI('s-scoreField','Score',CONFIG.scoreField)+'</div></div>';
+    body+=mkI('s-parameter','Brand parameter',CONFIG.parameter);
+    body+='<div class="settings-row"><div>'+mkS('s-theme','Theme',['light','dark'],CONFIG.theme)+'</div>';
+    body+='<div>'+mkS('s-mode','Mode',['simple','advanced'],CONFIG.mode)+'</div>';
+    body+='<div>'+mkS('s-guides','Guides',['zones','all','none'],CONFIG.guides)+'</div></div>';
+    body+='<button class="btn-save" id="s-save">Save & render</button>';
+    var dialog=document.createElement('div'); dialog.id='settings-dialog'; dialog.innerHTML=body;
+    overlay.appendChild(dialog); document.body.appendChild(overlay);
+    document.getElementById('s-save').onclick=async function(){
+      ['worksheet','brandField','displayField','xField','yField','rankField','zoneField',
+       'apexXField','apexYField','roleField','scoreField','parameter','theme','mode','guides'
+      ].forEach(function(f){var el=document.getElementById('s-'+f);if(el)CONFIG[f]=el.value;});
+      if(typeof tableau!=='undefined'&&tableau.extensions){
+        var s=tableau.extensions.settings;
+        Object.keys(CONFIG).forEach(function(k){s.set(k,CONFIG[k]);}); await s.saveAsync();
+      }
+      overlay.remove(); applyGround();
+      if(_dashboard&&CONFIG.worksheet){
+        var ws=_dashboard.worksheets.find(function(w){return w.name===CONFIG.worksheet;});
+        if(ws)await fetchAndRender(ws,_dashboard);
+      } else { renderScatter(document.getElementById('chart'),getSampleData(),'VELLORA COFFEE',sampleOpts()); }
+    };
+  }
+  function applyGround(){var T=P();document.body.style.background=T.ground;document.documentElement.style.background=T.ground;}
+
+  document.getElementById('configure-btn').onclick=function(){
+    showSettings(_dashboard?_dashboard.worksheets.map(function(ws){return ws.name;}):null);
+  };
+
+  var _rT=null;
+  new ResizeObserver(function(){clearTimeout(_rT);_rT=setTimeout(function(){
+    if(_lastData)renderScatter(document.getElementById('chart'),_lastData,_clientBrand,
+      _lastOpts||{guides:CONFIG.guides,mode:CONFIG.mode});
+  },150);}).observe(document.getElementById('chart'));
+
+  // ─── INIT ────────────────────────────────────────────────────────────────
+  (function(){
+    if(typeof tableau==='undefined'){setTimeout(function(){
+      if(typeof tableau==='undefined'){applyGround();
+        renderScatter(document.getElementById('chart'),getSampleData(),'VELLORA COFFEE',sampleOpts());
+        return;}initTableau();},500);return;}initTableau();})();
+
+  function initTableau(){
+    tableau.extensions.initializeAsync({configure:function(){
+      showSettings(_dashboard?_dashboard.worksheets.map(function(ws){return ws.name;}):null);
+    }}).then(async function(){
+      _dashboard=tableau.extensions.dashboardContent.dashboard;
+      var settings=tableau.extensions.settings;
+      Object.keys(DEFAULTS).forEach(function(k){var v=settings.get(k);if(v)CONFIG[k]=v;});
+      applyGround();
+      if(!CONFIG.worksheet){showSettings(_dashboard.worksheets.map(function(ws){return ws.name;}));return;}
+      var ws=_dashboard.worksheets.find(function(w){return w.name===CONFIG.worksheet;});
+      if(!ws){showSettings(_dashboard.worksheets.map(function(w){return w.name;}));return;}
+      var allParams=await _dashboard.getParametersAsync();
+      var bp=allParams.find(function(p){return p.name===CONFIG.parameter;});
+      if(bp)bp.addEventListener(tableau.TableauEventType.ParameterChanged,function(){fetchAndRender(ws,_dashboard);});
+      await fetchAndRender(ws,_dashboard);
+    }).catch(function(err){
+      console.error('init failed:',err); applyGround();
+      renderScatter(document.getElementById('chart'),getSampleData(),'VELLORA COFFEE',sampleOpts());
+    });
+  }
+  </script>
+</body>
+</html>
