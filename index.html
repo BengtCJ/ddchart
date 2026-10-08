@@ -55,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-09.1';
+  var VERSION = '2026-10-09.2';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -118,7 +118,7 @@
     apexXField:'TARGET_X', apexYField:'TARGET_Y', roleField:'BRAND_ROLE',
     scoreField:'SCORE_METRICS_OVERALL', displayField:'DISPLAY_NAME',
     parameter:'Brand Parameter',
-    theme:'light', mode:'simple', guides:'zones',
+    theme:'light', mode:'simple', guides:'zones', curve:'off',
   };
 
   var _dashboard=null, _lastData=null, _lastOpts=null,
@@ -266,7 +266,8 @@
     }
 
     // ── Curve + apex ───────────────────────────────────────────────────────
-    if (apexX!==null&&apexY!==null&&!isNaN(apexX)&&!isNaN(apexY)) {
+    var showCurve = (opts.curve || CONFIG.curve || 'off') === 'on';
+    if (showCurve&&apexX!==null&&apexY!==null&&!isNaN(apexX)&&!isNaN(apexY)) {
       var cPts=curvePoints(apexX,apexY);
       g.append('path').datum(cPts)
         .attr('d',d3.line().x(function(d){return xS(d[0]);}).y(function(d){return yS(d[1]);}))
@@ -555,13 +556,14 @@
     body+=mkI('s-parameter','Brand parameter',CONFIG.parameter);
     body+='<div class="settings-row"><div>'+mkS('s-theme','Theme',['light','dark'],CONFIG.theme)+'</div>';
     body+='<div>'+mkS('s-mode','Mode',['simple','advanced'],CONFIG.mode)+'</div>';
-    body+='<div>'+mkS('s-guides','Guides',['zones','all','none'],CONFIG.guides)+'</div></div>';
+    body+='<div>'+mkS('s-guides','Guides',['zones','all','none'],CONFIG.guides)+'</div>';
+    body+='<div>'+mkS('s-curve','Curve',['on','off'],CONFIG.curve)+'</div></div>';
     body+='<button class="btn-save" id="s-save">Save & render</button>';
     var dialog=document.createElement('div'); dialog.id='settings-dialog'; dialog.innerHTML=body;
     overlay.appendChild(dialog); document.body.appendChild(overlay);
     document.getElementById('s-save').onclick=async function(){
       ['worksheet','brandField','displayField','xField','yField','rankField','zoneField',
-       'apexXField','apexYField','roleField','scoreField','parameter','theme','mode','guides'
+       'apexXField','apexYField','roleField','scoreField','parameter','theme','mode','guides','curve'
       ].forEach(function(f){var el=document.getElementById('s-'+f);if(el)CONFIG[f]=el.value;});
       if(typeof tableau!=='undefined'&&tableau.extensions){
         var s=tableau.extensions.settings;
