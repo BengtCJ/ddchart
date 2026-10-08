@@ -54,7 +54,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-09-29.5';
+  var VERSION = '2026-10-08.1';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -443,9 +443,17 @@
     try {
       var dt=await worksheet.getSummaryDataAsync({maxRows:5000});
       var cols=dt.columns, rows=dt.data;
+      function stripAgg(s) {
+        // "AVG(Score X Overall)" → "Score X Overall"
+        var m = s.match(/^(?:AVG|SUM|MIN|MAX|ATTR|CNT|CNTD|MEDIAN)\((.+)\)$/i);
+        return m ? m[1] : s;
+      }
       function ci(name) {
         var n=name.toLowerCase().replace(/[\s_]+/g,'');
-        return cols.findIndex(function(c){return c.fieldName.toLowerCase().replace(/[\s_]+/g,'')===n;});
+        return cols.findIndex(function(c){
+          var fn=stripAgg(c.fieldName).toLowerCase().replace(/[\s_]+/g,'');
+          return fn===n;
+        });
       }
       var bi=ci(CONFIG.brandField),xi=ci(CONFIG.xField),yi=ci(CONFIG.yField),
           zi=ci(CONFIG.zoneField),ri=ci(CONFIG.rankField),
