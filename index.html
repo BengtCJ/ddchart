@@ -55,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-09.3';
+  var VERSION = '2026-10-09.4';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -567,7 +567,7 @@
       } else { renderScatter(document.getElementById('chart'),getSampleData(),'VELLORA COFFEE',sampleOpts()); }
     };
   }
-  function applyGround(){var T=P();document.getElementById('chart').style.background=T.ground;document.body.style.background='transparent';document.documentElement.style.background='transparent';}
+  function applyGround(){var T=P();document.getElementById('chart').style.background=T.ground;var o=CONFIG.theme==='dark'?'#000':'transparent';document.body.style.background=o;document.documentElement.style.background=o;}
 
   document.getElementById('configure-btn').onclick=function(){
     showSettings(_dashboard?_dashboard.worksheets.map(function(ws){return ws.name;}):null);
