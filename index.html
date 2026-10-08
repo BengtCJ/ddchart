@@ -11,7 +11,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; font-family: 'Helvetica Neue', Arial, sans-serif; overflow: hidden; }
     #app-shell { display: flex; flex-direction: column; width: 100%; height: 100%; }
-    #chart { flex: 1; min-height: 0; overflow: hidden; }
+    #chart { flex: 1; min-height: 0; overflow: hidden; border-radius: 8px; }
     .error { font-size: 13px; padding: 16px; font-family: monospace; }
 
     #settings-overlay {
@@ -55,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-09.2';
+  var VERSION = '2026-10-09.3';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -90,7 +90,7 @@
       faintBub:   '#cccccc',
     },
     dark: {
-      ground:     '#111111',
+      ground:     '#1e1e1e',
       ink:        '#e6e6e6',
       brand:      '#888888',
       brandEdge:  '#e6e6e6',
@@ -118,7 +118,7 @@
     apexXField:'TARGET_X', apexYField:'TARGET_Y', roleField:'BRAND_ROLE',
     scoreField:'SCORE_METRICS_OVERALL', displayField:'DISPLAY_NAME',
     parameter:'Brand Parameter',
-    theme:'light', mode:'simple', guides:'zones', curve:'off',
+    theme:'light', mode:'simple', guides:'zones', curve:'off', circleSize:'on', sizeLegend:'on',
   };
 
   var _dashboard=null, _lastData=null, _lastOpts=null,
@@ -182,7 +182,7 @@
 
     var svg=d3.select(el).append('svg')
       .attr('width',W).attr('height',H).style('display','block')
-      .style('background',T.ground);
+      .style('background','transparent');
     var g=svg.append('g').attr('transform','translate('+margin.left+','+margin.top+')');
 
     var brands=data.brands, apexX=data.apexX, apexY=data.apexY;
@@ -343,26 +343,13 @@
         return;
       }
 
-      var r=bubbleRadius(b.score,minZ,maxZ);
+      var r=(CONFIG.circleSize||'on')==='off'?MIN_BUBBLE_R+(MAX_BUBBLE_R-MIN_BUBBLE_R)*0.5:bubbleRadius(b.score,minZ,maxZ);
 
       g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',r)
         .attr('fill',fill).attr('opacity',isClient?0.9:0.65)
         .attr('stroke',T.brandEdge).attr('stroke-width',isClient?1.5:0.8)
         .attr('data-brand',b.name).style('cursor','pointer')
         .on('click',function(){toggleBrand(b.name);});
-
-      // Rank #1 ring
-      if (b.name===rank1Name && !isClient) {
-        g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',r+4)
-          .attr('fill','none').attr('stroke',T.rank1Ring).attr('stroke-width',2)
-          .attr('data-brand',b.name);
-      }
-      // Client ring — pink, dashed
-      if (isClient) {
-        g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',r+5)
-          .attr('fill','none').attr('stroke',T.clientRing).attr('stroke-width',2.5)
-          .attr('stroke-dasharray','5,3').attr('data-brand',b.name);
-      }
 
       var rankStr=(b.rank!==null&&b.rank!==undefined)?' #'+b.rank:'';
       g.append('text').attr('x',cx+r+4).attr('y',cy-2)
@@ -407,6 +394,7 @@
     }
 
     // ── Bubble size legend (lower right) ───────────────────────────────────
+    if ((CONFIG.sizeLegend||'on')==='on'&&(CONFIG.circleSize||'on')==='on') {
     var bLX=w-30, bLY=h-10;
     var bLVals=[minZ,minZ+(maxZ-minZ)*0.5,maxZ];
     g.append('text').attr('x',bLX).attr('y',bLY-bLVals.length*26-6).attr('text-anchor','middle')
@@ -418,6 +406,7 @@
       g.append('text').attr('x',bLX+MAX_BUBBLE_R+6).attr('y',by+3)
         .style('font-size','9px').style('fill',T.legendText).text(v.toFixed(1));
     });
+    }
 
     _lastData=data; _lastOpts=opts;
   }
@@ -558,12 +547,14 @@
     body+='<div>'+mkS('s-mode','Mode',['simple','advanced'],CONFIG.mode)+'</div>';
     body+='<div>'+mkS('s-guides','Guides',['zones','all','none'],CONFIG.guides)+'</div>';
     body+='<div>'+mkS('s-curve','Curve',['on','off'],CONFIG.curve)+'</div></div>';
+    body+='<div class="settings-row"><div>'+mkS('s-circleSize','Circle size',['on','off'],CONFIG.circleSize)+'</div>';
+    body+='<div>'+mkS('s-sizeLegend','Size legend',['on','off'],CONFIG.sizeLegend)+'</div></div>';
     body+='<button class="btn-save" id="s-save">Save & render</button>';
     var dialog=document.createElement('div'); dialog.id='settings-dialog'; dialog.innerHTML=body;
     overlay.appendChild(dialog); document.body.appendChild(overlay);
     document.getElementById('s-save').onclick=async function(){
       ['worksheet','brandField','displayField','xField','yField','rankField','zoneField',
-       'apexXField','apexYField','roleField','scoreField','parameter','theme','mode','guides','curve'
+       'apexXField','apexYField','roleField','scoreField','parameter','theme','mode','guides','curve','circleSize','sizeLegend'
       ].forEach(function(f){var el=document.getElementById('s-'+f);if(el)CONFIG[f]=el.value;});
       if(typeof tableau!=='undefined'&&tableau.extensions){
         var s=tableau.extensions.settings;
@@ -576,7 +567,7 @@
       } else { renderScatter(document.getElementById('chart'),getSampleData(),'VELLORA COFFEE',sampleOpts()); }
     };
   }
-  function applyGround(){var T=P();document.body.style.background=T.ground;document.documentElement.style.background=T.ground;}
+  function applyGround(){var T=P();document.getElementById('chart').style.background=T.ground;document.body.style.background='transparent';document.documentElement.style.background='transparent';}
 
   document.getElementById('configure-btn').onclick=function(){
     showSettings(_dashboard?_dashboard.worksheets.map(function(ws){return ws.name;}):null);
