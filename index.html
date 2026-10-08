@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://fonts.googleapis.com/css2?family=Baskervville:ital@1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baskervville:ital@0;1&display=swap" rel="stylesheet">
   <title>DD Chart — Scatter</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <script src="tableau.extensions.js" onerror="console.warn('Tableau Extensions API not available — running in preview mode')"></script>
@@ -55,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-08.2';
+  var VERSION = '2026-10-09.1';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -220,7 +220,7 @@
     }
 
     // Zone labels
-    var zLSz=Math.max(7,Math.min(9,side/55));
+    var zLSz=Math.max(9,Math.min(11,side/55));
     var padX=0.03*(AXIS_MAX-AXIS_MIN), padY=0.02*(AXIS_MAX-AXIS_MIN);
     for (var zlid in bands) {
       var lbl=ZONE_NAMES[zlid]; if(!lbl) continue;
@@ -242,22 +242,22 @@
       g.append('line').attr('x1',xS(meanX)).attr('x2',xS(meanX)).attr('y1',0).attr('y2',h)
         .attr('stroke',T.guideLight).attr('stroke-dasharray','3,3').attr('stroke-width',0.8);
       g.append('text').attr('x',xS(meanX)).attr('y',h-4).attr('text-anchor','middle')
-        .style('font-size','7px').style('fill',T.guideText).text('x\u0304='+meanX.toFixed(2));
+        .style('font-size','9px').style('fill',T.guideText).text('x\u0304='+meanX.toFixed(2));
 
       g.append('line').attr('x1',0).attr('x2',w).attr('y1',yS(meanY)).attr('y2',yS(meanY))
         .attr('stroke',T.guideLight).attr('stroke-dasharray','3,3').attr('stroke-width',0.8);
       g.append('text').attr('x',6).attr('y',yS(meanY)-4)
-        .style('font-size','7px').style('fill',T.guideText).text('y\u0304='+meanY.toFixed(2));
+        .style('font-size','9px').style('fill',T.guideText).text('y\u0304='+meanY.toFixed(2));
 
       g.append('line').attr('x1',xS(q25x)).attr('x2',xS(q25x)).attr('y1',0).attr('y2',h)
         .attr('stroke',T.guideLight).attr('stroke-dasharray','3,3').attr('stroke-width',0.8);
       g.append('text').attr('x',xS(q25x)).attr('y',h-4).attr('text-anchor','middle')
-        .style('font-size','7px').style('fill',T.guideText).text('Q1='+q25x.toFixed(2));
+        .style('font-size','9px').style('fill',T.guideText).text('Q1='+q25x.toFixed(2));
 
       g.append('line').attr('x1',0).attr('x2',w).attr('y1',yS(q25y)).attr('y2',yS(q25y))
         .attr('stroke',T.guideLight).attr('stroke-dasharray','3,3').attr('stroke-width',0.8);
       g.append('text').attr('x',6).attr('y',yS(q25y)-4)
-        .style('font-size','7px').style('fill',T.guideText).text('Q1='+q25y.toFixed(2));
+        .style('font-size','9px').style('fill',T.guideText).text('Q1='+q25y.toFixed(2));
 
       g.append('line').attr('x1',xS(q75x)).attr('x2',xS(q75x)).attr('y1',0).attr('y2',h)
         .attr('stroke',T.guideMed).attr('stroke-dasharray','6,3').attr('stroke-width',0.6).attr('opacity',0.5);
@@ -290,7 +290,7 @@
         var letter=(c.group||'').charAt(0).toUpperCase();
         if (letter) {
           g.append('text').attr('x',cx).attr('y',cy+2.5).attr('text-anchor','middle')
-            .style('font-size','7px').style('font-weight','bold')
+            .style('font-size','9px').style('font-weight','bold')
             .style('fill',isC?PINK:T.brand).style('opacity','0.7')
             .style('pointer-events','none').text(letter);
         }
@@ -337,7 +337,7 @@
           .attr('data-brand',b.name).style('cursor','pointer')
           .on('click',function(){toggleBrand(b.name);});
         g.append('text').attr('x',cx+MIN_BUBBLE_R+3).attr('y',cy-2)
-          .text(b.name).style('font-size','8px').style('opacity',isClient?'0.8':'0.45')
+          .text(b.name).style('font-size','9px').style('opacity',isClient?'0.8':'0.45')
           .style('fill',T.ink).style('pointer-events','none').attr('data-brand',b.name);
         return;
       }
@@ -366,7 +366,7 @@
       var rankStr=(b.rank!==null&&b.rank!==undefined)?' #'+b.rank:'';
       g.append('text').attr('x',cx+r+4).attr('y',cy-2)
         .text(b.name+rankStr)
-        .style('font-size','9.5px').style('font-weight','bold')
+        .style('font-size','11px').style('font-weight','bold')
         .style('fill',T.ink).style('pointer-events','none')
         .attr('data-brand',b.name);
     });
@@ -382,9 +382,9 @@
       .attr('x1',0).attr('y1',h).attr('x2',0).attr('y2',0).html(
       '<stop offset="0" stop-color="'+AXC+'" stop-opacity="0"/><stop offset="1" stop-color="'+AXC+'" stop-opacity="1"/>');
     var xl=g.append('text').attr('x',w/2).attr('y',h+5).attr('text-anchor','middle')
-      .style('font-family',AXF).style('font-style','italic').style('font-size','16px').style('fill',T.ink).text('Disruption');
+      .style('font-family',AXF).style('font-style','italic').style('font-size','14px').style('fill',T.ink).text('Disruption');
     var yl=g.append('text').attr('transform','translate(5,'+(h/2)+') rotate(-90)').attr('text-anchor','middle')
-      .style('font-family',AXF).style('font-style','italic').style('font-size','16px').style('fill',T.ink).text('Desire');
+      .style('font-family',AXF).style('font-style','italic').style('font-size','14px').style('fill',T.ink).text('Desire');
     var xw=40, yw=30;
     try { xw=xl.node().getBBox().width/2+8; yw=yl.node().getBBox().width/2+8; } catch(e) {}
     function axLine(x1,y1,x2,y2,id){
@@ -398,24 +398,24 @@
 
     if (title) {
       svg.append('text').attr('x',margin.left).attr('y',18)
-        .style('font-size','13px').style('font-weight','bold').style('fill',T.ink).text(title);
+        .style('font-size','15px').style('font-weight','bold').style('fill',T.ink).text(title);
     }
     if (subTitle) {
       svg.append('text').attr('x',margin.left+w/2).attr('y',margin.top+h+54).attr('text-anchor','middle')
-        .style('font-size','9px').style('fill',T.subtitle).style('font-style','italic').text(subTitle);
+        .style('font-size','11px').style('fill',T.subtitle).style('font-style','italic').text(subTitle);
     }
 
     // ── Bubble size legend (lower right) ───────────────────────────────────
     var bLX=w-30, bLY=h-10;
     var bLVals=[minZ,minZ+(maxZ-minZ)*0.5,maxZ];
     g.append('text').attr('x',bLX).attr('y',bLY-bLVals.length*26-6).attr('text-anchor','middle')
-      .style('font-size','7px').style('fill',T.legendText).text('Score');
+      .style('font-size','9px').style('fill',T.legendText).text('Score');
     bLVals.forEach(function(v,i) {
       var r=bubbleRadius(v,minZ,maxZ), by=bLY-i*26;
       g.append('circle').attr('cx',bLX).attr('cy',by).attr('r',r)
         .attr('fill',T.faintBub).attr('opacity',0.5);
       g.append('text').attr('x',bLX+MAX_BUBBLE_R+6).attr('y',by+3)
-        .style('font-size','7px').style('fill',T.legendText).text(v.toFixed(1));
+        .style('font-size','9px').style('fill',T.legendText).text(v.toFixed(1));
     });
 
     _lastData=data; _lastOpts=opts;
