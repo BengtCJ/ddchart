@@ -55,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-09.4';
+  var VERSION = '2026-10-09.5';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -171,11 +171,11 @@
 
     var rect = el.getBoundingClientRect();
     var W=rect.width||600, H=rect.height||600;
-    var margin={top:44, right:16, bottom:58, left:58};
+    var margin={top:58, right:58, bottom:58, left:58};
     var w=W-margin.left-margin.right, h=H-margin.top-margin.bottom;
     var side=Math.min(w,h); w=h=side;
     margin.left=Math.max(58,Math.floor((W-w)/2));
-    margin.top=Math.max(44,Math.floor((H-h)/2));
+    margin.top=Math.max(58,Math.floor((H-h)/2));
 
     var xS=d3.scaleLinear().domain([AXIS_MIN,AXIS_MAX]).range([0,w]);
     var yS=d3.scaleLinear().domain([AXIS_MIN,AXIS_MAX]).range([h,0]);
