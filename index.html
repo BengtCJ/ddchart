@@ -485,6 +485,14 @@
       var allParams=await dashboard.getParametersAsync();
       var bp=allParams.find(function(p){return p.name===CONFIG.parameter;});
       if(bp)_clientBrand=(bp.currentValue.formattedValue||bp.currentValue.value||'').trim();
+      // Resolve client brand: exact match first, then case-insensitive contains
+      if (_clientBrand) {
+        var cb = _clientBrand.toUpperCase();
+        var match = brands.find(function(b){return b.name === _clientBrand;})
+          || brands.find(function(b){return b.name.toUpperCase() === cb;})
+          || brands.find(function(b){return b.name.toUpperCase().indexOf(cb) !== -1 || cb.indexOf(b.name.toUpperCase()) !== -1;});
+        if (match) _clientBrand = match.name;
+      }
       renderScatter(document.getElementById('chart'),
         {brands:brands,apexX:apexX,apexY:apexY,cloud:[]},
         _clientBrand,{guides:CONFIG.guides,mode:CONFIG.mode});
