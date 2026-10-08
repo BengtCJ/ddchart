@@ -55,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-09.5';
+  var VERSION = '2026-10-09.6';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -337,7 +337,7 @@
           .attr('fill',fill).attr('opacity',isClient?0.7:0.4).attr('stroke','none')
           .attr('data-brand',b.name).style('cursor','pointer')
           .on('click',function(){toggleBrand(b.name);});
-        g.append('text').attr('x',cx+MIN_BUBBLE_R+3).attr('y',cy-2)
+        g.append('text').attr('x',cx+MIN_BUBBLE_R+3).attr('y',cy).attr('dominant-baseline','central')
           .text(b.name).style('font-size','9px').style('opacity',isClient?'0.8':'0.45')
           .style('fill',T.ink).style('pointer-events','none').attr('data-brand',b.name);
         return;
@@ -351,9 +351,8 @@
         .attr('data-brand',b.name).style('cursor','pointer')
         .on('click',function(){toggleBrand(b.name);});
 
-      var rankStr=(b.rank!==null&&b.rank!==undefined)?' #'+b.rank:'';
-      g.append('text').attr('x',cx+r+4).attr('y',cy-2)
-        .text(b.name+rankStr)
+      g.append('text').attr('x',cx+r+4).attr('y',cy).attr('dominant-baseline','central')
+        .text(b.name)
         .style('font-size','11px').style('font-weight','bold')
         .style('fill',T.ink).style('pointer-events','none')
         .attr('data-brand',b.name);
