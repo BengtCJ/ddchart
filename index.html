@@ -55,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-09.6';
+  var VERSION = '2026-10-09.7';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -272,8 +272,6 @@
       g.append('path').datum(cPts)
         .attr('d',d3.line().x(function(d){return xS(d[0]);}).y(function(d){return yS(d[1]);}))
         .attr('fill','none').attr('stroke',T.curve).attr('stroke-width',0.6);
-      g.append('circle').attr('cx',xS(apexX)).attr('cy',yS(apexY)).attr('r',10)
-        .attr('fill','none').attr('stroke',T.ink).attr('stroke-width',2);
       g.append('path')
         .attr('d',d3.symbol().type(d3.symbolStar).size(120)())
         .attr('transform','translate('+xS(apexX)+','+yS(apexY)+')')
@@ -347,7 +345,7 @@
 
       g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',r)
         .attr('fill',fill).attr('opacity',isClient?0.9:0.65)
-        .attr('stroke',T.brandEdge).attr('stroke-width',isClient?1.5:0.8)
+        .attr('stroke','none')
         .attr('data-brand',b.name).style('cursor','pointer')
         .on('click',function(){toggleBrand(b.name);});
 
