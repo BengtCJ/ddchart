@@ -371,22 +371,19 @@
     });
 
     // ── Axes ────────────────────────────────────────────────────────────────
-    var gx=g.append('g').attr('transform','translate(0,'+h+')').call(d3.axisBottom(xS).tickValues([0,1,2,3,4,5]));
-    var gy=g.append('g').call(d3.axisLeft(yS).tickValues([0,1,2,3,4,5]));
-    [gx,gy].forEach(function(a){
-      a.selectAll('text').style('font-size','10px').style('fill',T.ink);
-      a.selectAll('line').style('stroke',T.ink);
-      a.select('.domain').style('stroke',T.ink);
-    });
+    g.append('line').attr('x1',0).attr('y1',h).attr('x2',w).attr('y2',h).style('stroke',T.ink).style('stroke-width','1');
+    g.append('line').attr('x1',0).attr('y1',h).attr('x2',0).attr('y2',0).style('stroke',T.ink).style('stroke-width','1');
+    g.append('path').attr('d','M'+(w+6)+','+h+'L'+(w-2)+','+(h-4)+'L'+(w-2)+','+(h+4)+'Z').style('fill',T.ink);
+    g.append('path').attr('d','M0,-6L-4,2L4,2Z').style('fill',T.ink);
 
     svg.append('text')
-      .attr('x',margin.left+w/2).attr('y',margin.top+h+42).attr('text-anchor','middle')
-      .style('font-size','11px').style('fill',T.ink)
-      .text('LLM Score  \u2190  Fading | Fixed | Future  \u2192');
+      .attr('x',margin.left+w).attr('y',margin.top+h+20).attr('text-anchor','end')
+      .style('font-size','11px').style('font-style','italic').style('fill',T.ink)
+      .text('Disruption →');
     svg.append('text').attr('transform','rotate(-90)')
-      .attr('x',-(margin.top+h/2)).attr('y',14).attr('text-anchor','middle')
-      .style('font-size','11px').style('fill',T.ink)
-      .text('Survey Score  \u2190  Fading | Fixed | Future  \u2192');
+      .attr('x',-margin.top).attr('y',14).attr('text-anchor','end')
+      .style('font-size','11px').style('font-style','italic').style('fill',T.ink)
+      .text('Desire →');
 
     if (title) {
       svg.append('text').attr('x',margin.left).attr('y',18)
