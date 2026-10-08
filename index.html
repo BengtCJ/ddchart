@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Baskervville:ital@1&display=swap" rel="stylesheet">
   <title>DD Chart — Scatter</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <script src="tableau.extensions.js" onerror="console.warn('Tableau Extensions API not available — running in preview mode')"></script>
@@ -54,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-08.1';
+  var VERSION = '2026-10-08.2';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -371,19 +372,29 @@
     });
 
     // ── Axes ────────────────────────────────────────────────────────────────
-    g.append('line').attr('x1',0).attr('y1',h).attr('x2',w).attr('y2',h).style('stroke',T.ink).style('stroke-width','1');
-    g.append('line').attr('x1',0).attr('y1',h).attr('x2',0).attr('y2',0).style('stroke',T.ink).style('stroke-width','1');
-    g.append('path').attr('d','M'+(w+6)+','+h+'L'+(w-2)+','+(h-4)+'L'+(w-2)+','+(h+4)+'Z').style('fill',T.ink);
-    g.append('path').attr('d','M0,-6L-4,2L4,2Z').style('fill',T.ink);
-
-    svg.append('text')
-      .attr('x',margin.left+w).attr('y',margin.top+h+20).attr('text-anchor','end')
-      .style('font-size','11px').style('font-style','italic').style('fill',T.ink)
-      .text('Disruption →');
-    svg.append('text').attr('transform','rotate(-90)')
-      .attr('x',-margin.top).attr('y',14).attr('text-anchor','end')
-      .style('font-size','11px').style('font-style','italic').style('fill',T.ink)
-      .text('Desire →');
+    var AXC=T.client, AXF="'Baskervville', Georgia, serif";
+    var axd=svg.select('defs'); if(axd.empty()) axd=svg.insert('defs',':first-child');
+    var gxId='axgx'+Math.floor(Math.random()*1e6), gyId='axgy'+Math.floor(Math.random()*1e6);
+    axd.append('linearGradient').attr('id',gxId).attr('gradientUnits','userSpaceOnUse')
+      .attr('x1',0).attr('y1',0).attr('x2',w).attr('y2',0).html(
+      '<stop offset="0" stop-color="'+AXC+'" stop-opacity="0"/><stop offset="1" stop-color="'+AXC+'" stop-opacity="1"/>');
+    axd.append('linearGradient').attr('id',gyId).attr('gradientUnits','userSpaceOnUse')
+      .attr('x1',0).attr('y1',h).attr('x2',0).attr('y2',0).html(
+      '<stop offset="0" stop-color="'+AXC+'" stop-opacity="0"/><stop offset="1" stop-color="'+AXC+'" stop-opacity="1"/>');
+    var xl=g.append('text').attr('x',w/2).attr('y',h+5).attr('text-anchor','middle')
+      .style('font-family',AXF).style('font-style','italic').style('font-size','16px').style('fill',T.ink).text('Disruption');
+    var yl=g.append('text').attr('transform','translate(5,'+(h/2)+') rotate(-90)').attr('text-anchor','middle')
+      .style('font-family',AXF).style('font-style','italic').style('font-size','16px').style('fill',T.ink).text('Desire');
+    var xw=40, yw=30;
+    try { xw=xl.node().getBBox().width/2+8; yw=yl.node().getBBox().width/2+8; } catch(e) {}
+    function axLine(x1,y1,x2,y2,id){
+      g.append('line').attr('x1',x1).attr('y1',y1).attr('x2',x2).attr('y2',y2)
+        .style('stroke','url(#'+id+')').style('stroke-width','1');
+    }
+    axLine(0,h,w/2-xw,h,gxId); axLine(w/2+xw,h,w-2,h,gxId);
+    axLine(0,h,0,h/2+yw,gyId); axLine(0,h/2-yw,0,2,gyId);
+    g.append('path').attr('d','M'+(w+4)+','+h+'L'+(w-4)+','+(h-3.5)+'L'+(w-4)+','+(h+3.5)+'Z').style('fill',AXC);
+    g.append('path').attr('d','M0,-4L-3.5,4L3.5,4Z').style('fill',AXC);
 
     if (title) {
       svg.append('text').attr('x',margin.left).attr('y',18)
