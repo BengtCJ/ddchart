@@ -55,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-28.5';
+  var VERSION = '2026-10-28.6';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -316,7 +316,8 @@
       return (b.rank!==null&&(best===null||b.rank<best.rank))?b:best;
     },null);
     var rank1Name=rank1?rank1.name:null;
-    var LBLF="'Baskervville', Baskerville, Georgia, serif", LBLSZ='11px';
+    var LBLF="'Baskervville', Baskerville, Georgia, serif", LBLSZ='13px';
+    var sizeOff=(CONFIG.circleSize||'on')==='off', UNI_R=MIN_BUBBLE_R+(MAX_BUBBLE_R-MIN_BUBBLE_R)*0.5;
     function titleCase(s){ return String(s).toLowerCase().replace(/(^|[\s\-\/(])(\S)/g,function(m,p,c){return p+c.toUpperCase();}); }
 
     brands.slice().sort(function(a,b){
@@ -331,17 +332,18 @@
       var hasSf = b.score!==null&&b.score!==undefined&&!isNaN(b.score)&&b.score>0;
 
       if (!hasSf) {
-        g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',MIN_BUBBLE_R)
+        var r0=sizeOff?UNI_R:MIN_BUBBLE_R;
+        g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',r0)
           .attr('fill',fill).attr('opacity',isClient?0.7:0.4).attr('stroke','none')
           .attr('data-brand',b.name).style('cursor','pointer')
           .on('click',function(){toggleBrand(b.name);});
-        g.append('text').attr('x',cx+MIN_BUBBLE_R+3).attr('y',cy).attr('dominant-baseline','central')
+        g.append('text').attr('x',cx+r0+3).attr('y',cy).attr('dominant-baseline','central')
           .text(titleCase(b.name)).style('font-family',LBLF).style('font-style','italic').style('font-size',LBLSZ).style('opacity',isClient?'0.8':'0.45')
           .style('fill',T.ink).style('pointer-events','none').attr('data-brand',b.name);
         return;
       }
 
-      var r=(CONFIG.circleSize||'on')==='off'?MIN_BUBBLE_R+(MAX_BUBBLE_R-MIN_BUBBLE_R)*0.5:bubbleRadius(b.score,minZ,maxZ);
+      var r=sizeOff?UNI_R:bubbleRadius(b.score,minZ,maxZ);
 
       g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',r)
         .attr('fill',fill).attr('opacity',isClient?0.9:0.65)
@@ -382,9 +384,9 @@
       .attr('x1',0).attr('y1',h).attr('x2',0).attr('y2',0).html(
       '<stop offset="0" stop-color="'+AXC+'" stop-opacity="0"/><stop offset="1" stop-color="'+AXC+'" stop-opacity="1"/>');
     var xl=g.append('text').attr('x',w/2).attr('y',h+5).attr('text-anchor','middle')
-      .style('font-family',AXF).style('font-style','italic').style('font-size','18px').style('fill',T.ink).text('Disruption');
+      .style('font-family',AXF).style('font-style','italic').style('font-size','24px').style('fill',T.ink).text('Disruption');
     var yl=g.append('text').attr('transform','translate(5,'+(h/2)+') rotate(-90)').attr('text-anchor','middle')
-      .style('font-family',AXF).style('font-style','italic').style('font-size','18px').style('fill',T.ink).text('Desire');
+      .style('font-family',AXF).style('font-style','italic').style('font-size','24px').style('fill',T.ink).text('Desire');
     var xw=40, yw=30;
     try { xw=xl.node().getBBox().width/2+8; yw=yl.node().getBBox().width/2+8; } catch(e) {}
     function axLine(x1,y1,x2,y2,id){
