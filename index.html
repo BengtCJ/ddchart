@@ -55,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-28.3';
+  var VERSION = '2026-10-28.5';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -268,15 +268,12 @@
 
     // ── Curve + apex ───────────────────────────────────────────────────────
     var showCurve = (opts.curve || CONFIG.curve || 'off') === 'on';
-    if (showCurve&&apexX!==null&&apexY!==null&&!isNaN(apexX)&&!isNaN(apexY)) {
+    var hasApex = apexX!==null&&apexY!==null&&!isNaN(apexX)&&!isNaN(apexY);
+    if (showCurve&&hasApex) {
       var cPts=curvePoints(apexX,apexY);
       g.append('path').datum(cPts)
         .attr('d',d3.line().x(function(d){return xS(d[0]);}).y(function(d){return yS(d[1]);}))
         .attr('fill','none').attr('stroke',T.curve).attr('stroke-width',0.6);
-      g.append('path')
-        .attr('d',d3.symbol().type(d3.symbolStar).size(120)())
-        .attr('transform','translate('+xS(apexX)+','+yS(apexY)+')')
-        .attr('fill',T.ink);
     }
 
     // ── Category cloud — advanced mode only ────────────────────────────────
@@ -358,6 +355,21 @@
         .style('fill',T.ink).style('pointer-events','none')
         .attr('data-brand',b.name);
     });
+
+    // Target (apex) — ink circle with ground ring + crosshair, drawn above bubbles
+    if (hasApex) {
+      var tx=xS(apexX), ty=yS(apexY), tGap=8, tLen=14;
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){
+        g.append('line')
+          .attr('x1',tx+d[0]*tGap).attr('y1',ty+d[1]*tGap)
+          .attr('x2',tx+d[0]*tLen).attr('y2',ty+d[1]*tLen)
+          .attr('stroke',T.ink).attr('stroke-width',1)
+          .style('pointer-events','none');
+      });
+      g.append('circle').attr('cx',tx).attr('cy',ty).attr('r',5)
+        .attr('fill',T.ink).attr('stroke',T.ground).attr('stroke-width',1.5)
+        .style('pointer-events','none');
+    }
 
     // ── Axes ────────────────────────────────────────────────────────────────
     var AXC=T.client, AXF="'Baskervville', Georgia, serif";
