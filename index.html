@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://fonts.googleapis.com/css2?family=Baskervville:ital@0;1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baskervville:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
   <title>DD Chart — Scatter</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <script src="tableau.extensions.js" onerror="console.warn('Tableau Extensions API not available — running in preview mode')"></script>
@@ -55,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-09.8';
+  var VERSION = '2026-10-28.3';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -221,12 +221,13 @@
 
     // Zone labels
     var zLSz=Math.max(11,Math.min(13,side/55));
-    var padX=0.03*(AXIS_MAX-AXIS_MIN), padY=0.02*(AXIS_MAX-AXIS_MIN);
+    var zInset=8;
     for (var zlid in bands) {
       var lbl=ZONE_NAMES[zlid]; if(!lbl) continue;
       var zb=bands[zlid]; if(zb[1]-zb[0]<=0||zb[3]-zb[2]<=0) continue;
-      g.append('text').attr('x',xS(zb[0]+padX)).attr('y',yS(zb[3]-padY))
-        .text(lbl).style('font-size',zLSz+'px').style('fill',T.zoneText)
+      g.append('text').attr('x',xS(zb[0])+zInset).attr('y',yS(zb[3])+zInset)
+        .attr('dominant-baseline','hanging')
+        .text(lbl.toUpperCase()).style('font-size',zLSz+'px').style('fill',T.zoneText)
         .style('pointer-events','none');
     }
 
@@ -318,6 +319,8 @@
       return (b.rank!==null&&(best===null||b.rank<best.rank))?b:best;
     },null);
     var rank1Name=rank1?rank1.name:null;
+    var LBLF="'Baskervville', Baskerville, Georgia, serif", LBLSZ='11px';
+    function titleCase(s){ return String(s).toLowerCase().replace(/(^|[\s\-\/(])(\S)/g,function(m,p,c){return p+c.toUpperCase();}); }
 
     brands.slice().sort(function(a,b){
       if(a.name===clientBrand) return 1;
@@ -336,7 +339,7 @@
           .attr('data-brand',b.name).style('cursor','pointer')
           .on('click',function(){toggleBrand(b.name);});
         g.append('text').attr('x',cx+MIN_BUBBLE_R+3).attr('y',cy).attr('dominant-baseline','central')
-          .text(b.name).style('font-size','11px').style('opacity',isClient?'0.8':'0.45')
+          .text(titleCase(b.name)).style('font-family',LBLF).style('font-style','italic').style('font-size',LBLSZ).style('opacity',isClient?'0.8':'0.45')
           .style('fill',T.ink).style('pointer-events','none').attr('data-brand',b.name);
         return;
       }
@@ -350,8 +353,8 @@
         .on('click',function(){toggleBrand(b.name);});
 
       g.append('text').attr('x',cx+r+4).attr('y',cy).attr('dominant-baseline','central')
-        .text(b.name)
-        .style('font-size','14px').style('font-weight','bold')
+        .text(titleCase(b.name))
+        .style('font-family',LBLF).style('font-style','italic').style('font-size',LBLSZ).style('font-weight','bold')
         .style('fill',T.ink).style('pointer-events','none')
         .attr('data-brand',b.name);
     });
