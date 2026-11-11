@@ -55,7 +55,7 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-10-28.6';
+  var VERSION = '2026-11-11.2';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -118,7 +118,7 @@
     apexXField:'TARGET_X', apexYField:'TARGET_Y', roleField:'BRAND_ROLE',
     scoreField:'SCORE_METRICS_OVERALL', displayField:'DISPLAY_NAME',
     parameter:'Brand Parameter',
-    theme:'light', mode:'simple', guides:'zones', curve:'off', circleSize:'on', sizeLegend:'on',
+    theme:'light', mode:'simple', guides:'zones', curve:'off', circleSize:'on', sizeLegend:'on', rings:'on',
   };
 
   var _dashboard=null, _lastData=null, _lastOpts=null,
@@ -274,6 +274,18 @@
       g.append('path').datum(cPts)
         .attr('d',d3.line().x(function(d){return xS(d[0]);}).y(function(d){return yS(d[1]);}))
         .attr('fill','none').attr('stroke',T.curve).attr('stroke-width',0.6);
+    }
+
+    // ── Concentric rings from apex (radius step 0.5) ───────────────────────
+    if (hasApex && (opts.rings || CONFIG.rings || 'on') === 'on') {
+      var clipId='ring-clip-'+Math.floor(Math.random()*1e9);
+      g.append('clipPath').attr('id',clipId).append('rect').attr('width',w).attr('height',h);
+      var rg=g.append('g').attr('clip-path','url(#'+clipId+')').style('pointer-events','none');
+      var rMax=Math.sqrt(Math.pow(Math.max(apexX-AXIS_MIN,AXIS_MAX-apexX),2)+Math.pow(Math.max(apexY-AXIS_MIN,AXIS_MAX-apexY),2));
+      for (var rr=0.5; rr<=rMax+0.5; rr+=0.5) {
+        rg.append('circle').attr('cx',xS(apexX)).attr('cy',yS(apexY)).attr('r',xS(AXIS_MIN+rr)-xS(AXIS_MIN))
+          .attr('fill','none').attr('stroke',T.zoneText).attr('stroke-width',0.6).attr('opacity',0.5);
+      }
     }
 
     // ── Category cloud — advanced mode only ────────────────────────────────
@@ -491,9 +503,15 @@
           rank:ri!==-1?parseInt(row[ri].value):null,
           score:si!==-1?parseFloat(row[si].value):null,role:role});
       });
-      if(apexX===null&&axi!==-1&&brands.length){
-        apexX=parseFloat(rows[0][axi].value); apexY=parseFloat(rows[0][ayi].value);
+      if((apexX===null||isNaN(apexX)||apexY===null||isNaN(apexY))&&axi!==-1&&ayi!==-1){
+        apexX=null; apexY=null;
+        rows.forEach(function(row){
+          if(apexX!==null)return;
+          var ax=parseFloat(row[axi].value), ay=parseFloat(row[ayi].value);
+          if(!isNaN(ax)&&!isNaN(ay)){apexX=ax;apexY=ay;}
+        });
       }
+      if(apexX===null)console.warn('ddchart: no apex. apex cols found:',axi!==-1,ayi!==-1,'columns:',cols.map(function(c){return c.fieldName;}));
       var allParams=await dashboard.getParametersAsync();
       var bp=allParams.find(function(p){return p.name===CONFIG.parameter;});
       if(bp)_clientBrand=(bp.currentValue.formattedValue||bp.currentValue.value||'').trim();
@@ -562,13 +580,14 @@
     body+='<div>'+mkS('s-guides','Guides',['zones','all','none'],CONFIG.guides)+'</div>';
     body+='<div>'+mkS('s-curve','Curve',['on','off'],CONFIG.curve)+'</div></div>';
     body+='<div class="settings-row"><div>'+mkS('s-circleSize','Circle size',['on','off'],CONFIG.circleSize)+'</div>';
-    body+='<div>'+mkS('s-sizeLegend','Size legend',['on','off'],CONFIG.sizeLegend)+'</div></div>';
+    body+='<div>'+mkS('s-sizeLegend','Size legend',['on','off'],CONFIG.sizeLegend)+'</div>';
+    body+='<div>'+mkS('s-rings','Apex rings',['on','off'],CONFIG.rings)+'</div></div>';
     body+='<button class="btn-save" id="s-save">Save & render</button>';
     var dialog=document.createElement('div'); dialog.id='settings-dialog'; dialog.innerHTML=body;
     overlay.appendChild(dialog); document.body.appendChild(overlay);
     document.getElementById('s-save').onclick=async function(){
       ['worksheet','brandField','displayField','xField','yField','rankField','zoneField',
-       'apexXField','apexYField','roleField','scoreField','parameter','theme','mode','guides','curve','circleSize','sizeLegend'
+       'apexXField','apexYField','roleField','scoreField','parameter','theme','mode','guides','curve','circleSize','sizeLegend','rings'
       ].forEach(function(f){var el=document.getElementById('s-'+f);if(el)CONFIG[f]=el.value;});
       if(typeof tableau!=='undefined'&&tableau.extensions){
         var s=tableau.extensions.settings;
