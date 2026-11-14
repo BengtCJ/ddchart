@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://fonts.googleapis.com/css2?family=Baskervville:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Baskervville:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
   <title>DD Chart — Scatter</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <script src="tableau.extensions.js" onerror="console.warn('Tableau Extensions API not available — running in preview mode')"></script>
@@ -55,7 +55,8 @@
   <button id="configure-btn" title="Configure chart">⚙</button>
 
   <script>
-  var VERSION = '2026-11-11.2';
+  var VERSION = '2026-11-14.2';
+  var APEX_DEFAULT_IMG = 'data:image/png;base64,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';
 
   var AXIS_MIN = 0;
   var AXIS_MAX = 5;
@@ -88,6 +89,7 @@
       subtitle:   '#888888',
       labelBg:    'rgba(255,255,255,0.8)',
       faintBub:   '#cccccc',
+      brandHi:    '#4a4a4a',      // highlight mode: key brands
     },
     dark: {
       ground:     '#1e1e1e',
@@ -109,6 +111,7 @@
       subtitle:   '#777777',
       labelBg:    'rgba(17,17,17,0.8)',
       faintBub:   '#444444',
+      brandHi:    '#bdbdbd',
     },
   };
 
@@ -117,8 +120,8 @@
     yField:'SCORE_Y_OVERALL', zoneField:'ZONE_NAME', rankField:'RANK_OVERALL',
     apexXField:'TARGET_X', apexYField:'TARGET_Y', roleField:'BRAND_ROLE',
     scoreField:'SCORE_METRICS_OVERALL', displayField:'DISPLAY_NAME',
-    parameter:'Brand Parameter',
-    theme:'light', mode:'simple', guides:'zones', curve:'off', circleSize:'on', sizeLegend:'on', rings:'on',
+    parameter:'Brand Parameter', apexImage:'',
+    theme:'light', mode:'simple', guides:'none', curve:'dotted', circleSize:'on', sizeLegend:'off', rings:'on', highlight:'off',
   };
 
   var _dashboard=null, _lastData=null, _lastOpts=null,
@@ -144,10 +147,18 @@
     return MIN_BUBBLE_R + Math.max(0,Math.min(1,n)) * (MAX_BUBBLE_R-MIN_BUBBLE_R);
   }
 
+  // Mirrors scorer_core.curve_y (2026-11-14): one smooth curve through (0,0)
+  // and (5,0) whose peak is exactly the apex. y = ay·(x/ax)^a·((5−x)/(5−ax))^b,
+  // the smaller exponent fixed at 1 so both ends have a finite slope and there
+  // is no kink. An apex at or beyond the ends keeps the old piecewise parabola.
   function curveY(x, ax, ay) {
-    if (ax<=0) return 0;
-    if (x<=ax) return ay*Math.pow(x/ax,2);
-    var d=AXIS_MAX-ax; return d<=0?ay:ay-ay*Math.pow((x-ax)/d,2);
+    x=Math.max(AXIS_MIN,Math.min(AXIS_MAX,x));
+    if (ax<=AXIS_MIN||ax>=AXIS_MAX) {
+      var a1=ax!==0?ay/(ax*ax):0, a2=ax!==AXIS_MAX?ay/Math.pow(AXIS_MAX-ax,2):0;
+      return x<=ax?ay-a1*Math.pow(x-ax,2):ay-a2*Math.pow(x-ax,2);
+    }
+    var a=ax>=2.5?ax/(AXIS_MAX-ax):1, b=ax>=2.5?1:(AXIS_MAX-ax)/ax;
+    return ay*Math.pow(x/ax,a)*Math.pow((AXIS_MAX-x)/(AXIS_MAX-ax),b);
   }
   function curvePoints(ax, ay) {
     var pts=[],n=300;
@@ -261,19 +272,24 @@
         .style('font-size','10px').style('fill',T.guideText).text('Q1='+q25y.toFixed(2));
 
       g.append('line').attr('x1',xS(q75x)).attr('x2',xS(q75x)).attr('y1',0).attr('y2',h)
-        .attr('stroke',T.guideMed).attr('stroke-dasharray','6,3').attr('stroke-width',0.6).attr('opacity',0.5);
+        .attr('stroke',T.guideMed).attr('stroke-dasharray','6,3').attr('stroke-width',0.5).attr('opacity',0.25);
       g.append('line').attr('x1',0).attr('x2',w).attr('y1',yS(q75y)).attr('y2',yS(q75y))
-        .attr('stroke',T.guideMed).attr('stroke-dasharray','6,3').attr('stroke-width',0.6).attr('opacity',0.5);
+        .attr('stroke',T.guideMed).attr('stroke-dasharray','6,3').attr('stroke-width',0.5).attr('opacity',0.25);
     }
 
     // ── Curve + apex ───────────────────────────────────────────────────────
-    var showCurve = (opts.curve || CONFIG.curve || 'off') === 'on';
+    var curveMode = opts.curve || CONFIG.curve || 'off';
+    var showCurve = curveMode !== 'off';
     var hasApex = apexX!==null&&apexY!==null&&!isNaN(apexX)&&!isNaN(apexY);
     if (showCurve&&hasApex) {
       var cPts=curvePoints(apexX,apexY);
-      g.append('path').datum(cPts)
-        .attr('d',d3.line().x(function(d){return xS(d[0]);}).y(function(d){return yS(d[1]);}))
-        .attr('fill','none').attr('stroke',T.curve).attr('stroke-width',0.6);
+      var cLine=d3.line().x(function(d){return xS(d[0]);}).y(function(d){return yS(d[1]);});
+      // The rings' own line (zone-text grey), a touch firmer so it holds,
+      // dashed in 'dotted' mode, solid in 'on' (2026-11-14.2).
+      var cp=g.append('path').datum(cPts).attr('d',cLine).attr('fill','none')
+        .attr('stroke',T.zoneText).attr('stroke-width',0.75).attr('opacity',0.6)
+        .style('pointer-events','none');
+      if (curveMode==='dotted') cp.attr('stroke-dasharray','4 3');
     }
 
     // ── Concentric rings from apex (radius step 0.5) ───────────────────────
@@ -284,7 +300,7 @@
       var rMax=Math.sqrt(Math.pow(Math.max(apexX-AXIS_MIN,AXIS_MAX-apexX),2)+Math.pow(Math.max(apexY-AXIS_MIN,AXIS_MAX-apexY),2));
       for (var rr=0.5; rr<=rMax+0.5; rr+=0.5) {
         rg.append('circle').attr('cx',xS(apexX)).attr('cy',yS(apexY)).attr('r',xS(AXIS_MIN+rr)-xS(AXIS_MIN))
-          .attr('fill','none').attr('stroke',T.zoneText).attr('stroke-width',0.6).attr('opacity',0.5);
+          .attr('fill','none').attr('stroke',T.zoneText).attr('stroke-width',0.5).attr('opacity',0.25);
       }
     }
 
@@ -328,10 +344,22 @@
       return (b.rank!==null&&(best===null||b.rank<best.rank))?b:best;
     },null);
     var rank1Name=rank1?rank1.name:null;
-    var LBLF="'Baskervville', Baskerville, Georgia, serif", LBLSZ='13px';
-    var sizeOff=(CONFIG.circleSize||'on')==='off', UNI_R=MIN_BUBBLE_R+(MAX_BUBBLE_R-MIN_BUBBLE_R)*0.5;
+    var LBLF="'Baskervville', Baskerville, Georgia, serif", LBLSZ='13px', LBLW='600';
+    var sizeOff=(CONFIG.circleSize||'on')==='off', UNI_R=(MIN_BUBBLE_R+(MAX_BUBBLE_R-MIN_BUBBLE_R)*0.5)*0.6;
+    // Highlight mode: most desirable (max y), most disruptive (max x), closest to apex, + client
+    var hiOn=(opts.highlight||CONFIG.highlight||'off')==='key', hiSet={};
+    if (hiOn) {
+      var valid=brands.filter(function(b){return b.x!==null&&b.y!==null&&!isNaN(b.x)&&!isNaN(b.y);});
+      var pick=function(fn){var best=null,bv=-Infinity;valid.forEach(function(b){var v=fn(b);if(v>bv){bv=v;best=b;}});if(best)hiSet[best.name]=true;};
+      pick(function(b){return b.y;});
+      pick(function(b){return b.x;});
+      if (apexX!==null&&apexY!==null&&!isNaN(apexX)&&!isNaN(apexY))
+        pick(function(b){return -Math.sqrt(Math.pow(b.x-apexX,2)+Math.pow(b.y-apexY,2));});
+      if (clientBrand) hiSet[clientBrand]=true;
+    }
     function titleCase(s){ return String(s).toLowerCase().replace(/(^|[\s\-\/(])(\S)/g,function(m,p,c){return p+c.toUpperCase();}); }
 
+    var apexG=g.append('g');  // apex layer sits below brand circles/labels
     brands.slice().sort(function(a,b){
       if(a.name===clientBrand) return 1;
       if(b.name===clientBrand) return -1;
@@ -340,17 +368,19 @@
       if(b.x===null||b.y===null||isNaN(b.x)||isNaN(b.y)) return;
       var cx=xS(b.x), cy=yS(b.y);
       var isClient = clientBrand && b.name===clientBrand;
-      var fill = isClient ? T.client : T.brand;
+      var isHi = hiOn && !!hiSet[b.name], isFaint = hiOn && !isHi;
+      var fill = isClient ? T.client : (isFaint ? T.faintBub : (isHi ? T.brandHi : T.brand));
+      var lblOp = isFaint ? '0.4' : null, lblW = isFaint ? '400' : LBLW;
       var hasSf = b.score!==null&&b.score!==undefined&&!isNaN(b.score)&&b.score>0;
 
       if (!hasSf) {
         var r0=sizeOff?UNI_R:MIN_BUBBLE_R;
         g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',r0)
-          .attr('fill',fill).attr('opacity',isClient?0.7:0.4).attr('stroke','none')
+          .attr('fill',fill).attr('opacity',isClient?0.7:(isHi?0.85:(isFaint?0.6:0.4))).attr('stroke','none')
           .attr('data-brand',b.name).style('cursor','pointer')
           .on('click',function(){toggleBrand(b.name);});
         g.append('text').attr('x',cx+r0+3).attr('y',cy).attr('dominant-baseline','central')
-          .text(titleCase(b.name)).style('font-family',LBLF).style('font-style','italic').style('font-size',LBLSZ).style('opacity',isClient?'0.8':'0.45')
+          .text(titleCase(b.name)).style('font-family',LBLF).style('font-style','italic').style('font-size',LBLSZ).style('opacity',isClient||isHi?'0.8':(isFaint?'0.35':'0.45'))
           .style('fill',T.ink).style('pointer-events','none').attr('data-brand',b.name);
         return;
       }
@@ -358,30 +388,29 @@
       var r=sizeOff?UNI_R:bubbleRadius(b.score,minZ,maxZ);
 
       g.append('circle').attr('cx',cx).attr('cy',cy).attr('r',r)
-        .attr('fill',fill).attr('opacity',isClient?0.9:0.65)
+        .attr('fill',fill).attr('opacity',isClient?0.9:(isHi?0.9:(isFaint?0.7:0.65)))
         .attr('stroke','none')
         .attr('data-brand',b.name).style('cursor','pointer')
         .on('click',function(){toggleBrand(b.name);});
 
       g.append('text').attr('x',cx+r+4).attr('y',cy).attr('dominant-baseline','central')
         .text(titleCase(b.name))
-        .style('font-family',LBLF).style('font-style','italic').style('font-size',LBLSZ).style('font-weight','bold')
+        .style('font-family',LBLF).style('font-style','italic').style('font-size',LBLSZ).style('font-weight',lblW).style('opacity',lblOp)
         .style('fill',T.ink).style('pointer-events','none')
         .attr('data-brand',b.name);
     });
 
-    // Target (apex) — ink circle with ground ring + crosshair, drawn above bubbles
+    // Target (apex) — drawn into apexG so brands render in front
     if (hasApex) {
-      var tx=xS(apexX), ty=yS(apexY), tGap=8, tLen=14;
-      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){
-        g.append('line')
-          .attr('x1',tx+d[0]*tGap).attr('y1',ty+d[1]*tGap)
-          .attr('x2',tx+d[0]*tLen).attr('y2',ty+d[1]*tLen)
-          .attr('stroke',T.ink).attr('stroke-width',1)
-          .style('pointer-events','none');
-      });
-      g.append('circle').attr('cx',tx).attr('cy',ty).attr('r',5)
-        .attr('fill',T.ink).attr('stroke',T.ground).attr('stroke-width',1.5)
+      var tx=xS(apexX), ty=yS(apexY), tS=30, tPad=0;
+      var apexImg=CONFIG.apexImage||APEX_DEFAULT_IMG;
+      apexG.append('circle').attr('cx',tx).attr('cy',ty).attr('r',(xS(AXIS_MIN+0.36)-xS(AXIS_MIN))/2)
+        .attr('fill',T.ground).attr('stroke','none')
+        .style('pointer-events','none');
+      apexG.append('image').attr('href',apexImg)
+        .attr('x',tx-tS/2+tPad).attr('y',ty-tS/2+tPad)
+        .attr('width',tS-2*tPad).attr('height',tS-2*tPad)
+        .attr('preserveAspectRatio','xMidYMid meet')
         .style('pointer-events','none');
     }
 
@@ -578,16 +607,18 @@
     body+='<div class="settings-row"><div>'+mkS('s-theme','Theme',['light','dark'],CONFIG.theme)+'</div>';
     body+='<div>'+mkS('s-mode','Mode',['simple','advanced'],CONFIG.mode)+'</div>';
     body+='<div>'+mkS('s-guides','Guides',['zones','all','none'],CONFIG.guides)+'</div>';
-    body+='<div>'+mkS('s-curve','Curve',['on','off'],CONFIG.curve)+'</div></div>';
+    body+='<div>'+mkS('s-curve','Curve',['on','dotted','off'],CONFIG.curve)+'</div></div>';
     body+='<div class="settings-row"><div>'+mkS('s-circleSize','Circle size',['on','off'],CONFIG.circleSize)+'</div>';
     body+='<div>'+mkS('s-sizeLegend','Size legend',['on','off'],CONFIG.sizeLegend)+'</div>';
-    body+='<div>'+mkS('s-rings','Apex rings',['on','off'],CONFIG.rings)+'</div></div>';
+    body+='<div>'+mkS('s-rings','Apex rings',['on','off'],CONFIG.rings)+'</div>';
+    body+='<div>'+mkS('s-highlight','Highlight',['off','key'],CONFIG.highlight)+'</div></div>';
+    body+=mkI('s-apexImage','Apex image URL (blank = default)',CONFIG.apexImage);
     body+='<button class="btn-save" id="s-save">Save & render</button>';
     var dialog=document.createElement('div'); dialog.id='settings-dialog'; dialog.innerHTML=body;
     overlay.appendChild(dialog); document.body.appendChild(overlay);
     document.getElementById('s-save').onclick=async function(){
       ['worksheet','brandField','displayField','xField','yField','rankField','zoneField',
-       'apexXField','apexYField','roleField','scoreField','parameter','theme','mode','guides','curve','circleSize','sizeLegend','rings'
+       'apexXField','apexYField','roleField','scoreField','parameter','theme','mode','guides','curve','circleSize','sizeLegend','rings','highlight','apexImage'
       ].forEach(function(f){var el=document.getElementById('s-'+f);if(el)CONFIG[f]=el.value;});
       if(typeof tableau!=='undefined'&&tableau.extensions){
         var s=tableau.extensions.settings;

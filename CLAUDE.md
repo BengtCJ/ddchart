@@ -14,8 +14,8 @@ present. Use the ⚙ settings dialog to switch theme / mode / guides.
 ## What this chart draws
 Brands on a fixed 0–5 × 0–5 plane (LLM × Survey). Six zone bands (Drift,
 Inflection, Overreach, Plateau, Peak, Frontier) drawn as subtle alternating
-grey tints with grey zone labels. A piecewise parabolic frontier curve through
-the apex. Variable-size bubbles from score_metrics_overall. The client brand
+grey tints with grey zone labels. A smooth curve through (0,0) and (5,0) that
+peaks exactly on the apex, drawn in the apex rings' grey, dashed. Variable-size bubbles from score_metrics_overall. The client brand
 is the only element in colour — `#e994a2` (pink) fill and dashed ring.
 Everything else is black, white, or grey. Clicking a brand dims the rest
 and selects marks on other Tableau worksheets.
@@ -82,7 +82,7 @@ the renderers match on GEOMETRY and POSITION, not on colour.
 - Config stored in Tableau Extensions Settings API (persists in .twb)
 - `renderScatter(el, data, clientBrand, opts)` is the chart entry point
 - ResizeObserver triggers re-render on container resize
-- `curveY()` mirrors `scorer_core.curve_y` (piecewise parabola)
+- `curveY()` mirrors `scorer_core.curve_y` (smooth, peak on the apex; 2026-11-14)
 - Zone bands from Q25/Q75 on x, mean on y (same as `_zone_bands`)
 - `bubbleRadius()` mirrors `_bubble_size` (min-max normalised, r=5..16)
 
